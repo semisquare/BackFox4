@@ -8,6 +8,7 @@
 #include "Camera/CameraComponent.h"
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
+#include "GameFramework/PlayerController.h"
 
 // Sets default values
 AJCharacter::AJCharacter()
@@ -23,6 +24,14 @@ AJCharacter::AJCharacter()
 	SpringArmComponent->SetRelativeLocation(FVector(0, 0, 70));
 	SpringArmComponent->SetupAttachment(RootComponent);
 	SpringArmComponent->bUsePawnControlRotation = true; // Camera does not rotate relative to arm
+	SpringArmComponent->bEnableCameraLag = true;
+	SpringArmComponent->bEnableCameraRotationLag = true;
+	SpringArmComponent->CameraLagSpeed = 8.0f;
+	SpringArmComponent->CameraRotationLagSpeed = 9.0f;
+	
+	IdleArmLength = 420.0f;
+	RunArmLength = 500.0f;
+	SpringArmComponent->TargetArmLength = IdleArmLength;
 
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>("CameraComponent");
 	CameraComponent->SetupAttachment(SpringArmComponent);
@@ -31,7 +40,10 @@ AJCharacter::AJCharacter()
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 
 	bIsPressedJump = false;
-	StartMaxWalkSpeed = GetCharacterMovement()->MaxWalkSpeed;
+	bIsRun = false;
+	WalkSpeed = 350.0f;
+	RunSpeed = 600.0f;
+	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 
 // Called when the game starts or when spawned
@@ -54,6 +66,16 @@ void AJCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (bIsRun)
+	{
+		GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(GetCharacterMovement()->MaxWalkSpeed, RunSpeed, DeltaTime, 7.0f);
+		SpringArmComponent->TargetArmLength = FMath::FInterpTo(SpringArmComponent->TargetArmLength, RunArmLength, DeltaTime, 7.0f);
+	}
+	else
+	{
+		GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(GetCharacterMovement()->MaxWalkSpeed, WalkSpeed, DeltaTime, 4.0f);
+		SpringArmComponent->TargetArmLength = FMath::FInterpTo(SpringArmComponent->TargetArmLength, IdleArmLength, DeltaTime, 4.0f);
+	}
 }
 
 // Called to bind functionality to input
@@ -66,8 +88,12 @@ void AJCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AJCharacter::Move);
 
+		EnhancedInputComponent->BindAction(AccelerateAction, ETriggerEvent::Triggered, this, &AJCharacter::StartAccelerate);
+		EnhancedInputComponent->BindAction(AccelerateAction, ETriggerEvent::Completed, this, &AJCharacter::StopAccelerate);
+
 		//Jumping
-		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &AJCharacter::StartJump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Triggered, this, &ACharacter::Jump);
+		EnhancedInputComponent->BindAction(JumpAction, ETriggerEvent::Completed, this, &ACharacter::StopJumping);
 
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AJCharacter::Look);
@@ -95,6 +121,35 @@ void AJCharacter::Move(const FInputActionValue& Value)
 		// add movement 
 		AddMovementInput(ForwardDirection, MovementVector.Y);
 		AddMovementInput(RightDirection, MovementVector.X);
+	}
+}
+
+void AJCharacter::StartAccelerate(const FInputActionValue& Value)
+{
+	if (Controller != nullptr)
+	{
+		bIsRun = true;
+
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		if (PC)
+		{
+			PC->ClientStartCameraShake(AccelerateCameraShake);
+		}
+		
+	}
+}
+
+void AJCharacter::StopAccelerate(const FInputActionValue& Value)
+{
+	if (Controller != nullptr)
+	{
+		bIsRun = false;
+
+		APlayerController* PC = Cast<APlayerController>(GetController());
+		if (PC)
+		{
+			PC->ClientStartCameraShake(AccelerateCameraShake);
+		}
 	}
 }
 
