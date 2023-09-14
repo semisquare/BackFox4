@@ -9,6 +9,7 @@
 #include "EnhancedInputComponent.h"
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerController.h"
+#include "JAttributeComponent.h"
 
 // Sets default values
 AJCharacter::AJCharacter()
@@ -36,6 +37,8 @@ AJCharacter::AJCharacter()
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>("CameraComponent");
 	CameraComponent->SetupAttachment(SpringArmComponent);
 	CameraComponent->bUsePawnControlRotation = false; // Rotate the arm based on the controller
+
+	AttributeComponent = CreateDefaultSubobject<UJAttributeComponent>("AttributeComponent");
 
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 
@@ -66,14 +69,26 @@ void AJCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (bIsRun)
+	if (bIsRun && !AttributeComponent->IsExhausted())
 	{
 		GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(GetCharacterMovement()->MaxWalkSpeed, RunSpeed, DeltaTime, 7.0f);
-		SpringArmComponent->TargetArmLength = FMath::FInterpTo(SpringArmComponent->TargetArmLength, RunArmLength, DeltaTime, 7.0f);
+
+		AttributeComponent->ApplyStaminaChange(-26.0f * DeltaTime);
+
+		if (GetCharacterMovement()->Velocity.Length())
+		{
+			SpringArmComponent->TargetArmLength = FMath::FInterpTo(SpringArmComponent->TargetArmLength, RunArmLength, DeltaTime, 7.0f);
+		}
 	}
 	else
 	{
 		GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(GetCharacterMovement()->MaxWalkSpeed, WalkSpeed, DeltaTime, 4.0f);
+
+		if (AttributeComponent->IsRecoverStamina())
+		{
+			AttributeComponent->ApplyStaminaChange(38.0f * DeltaTime);
+		}
+
 		SpringArmComponent->TargetArmLength = FMath::FInterpTo(SpringArmComponent->TargetArmLength, IdleArmLength, DeltaTime, 4.0f);
 	}
 }
@@ -133,7 +148,14 @@ void AJCharacter::StartAccelerate(const FInputActionValue& Value)
 		APlayerController* PC = Cast<APlayerController>(GetController());
 		if (PC)
 		{
-			PC->ClientStartCameraShake(AccelerateCameraShake);
+			if (AttributeComponent->IsExhausted())
+			{
+				PC->ClientStopCameraShake(AccelerateCameraShake);
+			}
+			else
+			{
+				PC->ClientStartCameraShake(AccelerateCameraShake);
+			}
 		}
 		
 	}
@@ -148,7 +170,7 @@ void AJCharacter::StopAccelerate(const FInputActionValue& Value)
 		APlayerController* PC = Cast<APlayerController>(GetController());
 		if (PC)
 		{
-			PC->ClientStartCameraShake(AccelerateCameraShake);
+			PC->ClientStopCameraShake(AccelerateCameraShake);
 		}
 	}
 }

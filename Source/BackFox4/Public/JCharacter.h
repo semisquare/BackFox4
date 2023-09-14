@@ -7,6 +7,12 @@
 #include "InputActionValue.h"
 #include "JCharacter.generated.h"
 
+class USpringArmComponent;
+class UCameraComponent;
+class UJAttributeComponent;
+class UInputMappingContext;
+class UInputAction;
+
 UCLASS()
 class BACKFOX4_API AJCharacter : public ACharacter
 {
@@ -14,28 +20,31 @@ class BACKFOX4_API AJCharacter : public ACharacter
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Component, meta = (AllowPrivateAccess = "true"))
-		class USpringArmComponent* SpringArmComponent;
+		USpringArmComponent* SpringArmComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Component, meta = (AllowPrivateAccess = "true"))
-		class UCameraComponent* CameraComponent;
+		UCameraComponent* CameraComponent;
 	float IdleArmLength;
 	float RunArmLength;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Component, meta = (AllowPrivateAccess = "true"))
+		UJAttributeComponent* AttributeComponent;
+
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-		class UInputMappingContext* DefaultMappingContext;
+		UInputMappingContext* DefaultMappingContext;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-		class UInputAction* MoveAction;
+		UInputAction* MoveAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-		class UInputAction* AccelerateAction;
+		UInputAction* AccelerateAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-		class UInputAction* JumpAction;
+		UInputAction* JumpAction;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-		class UInputAction* LookAction;
+		UInputAction* LookAction;
 
 	
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
@@ -51,6 +60,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		TSubclassOf<class UCameraShakeBase> AccelerateCameraShake;
+
+
+	
 
 public:
 	// Sets default values for this character's properties
