@@ -3,6 +3,7 @@
 
 
 #include "JCharacter.h"
+#include "Kismet/KismetStringLibrary.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
@@ -10,6 +11,9 @@
 #include "EnhancedInputSubsystems.h"
 #include "GameFramework/PlayerController.h"
 #include "JAttributeComponent.h"
+#include "Components/WidgetComponent.h"
+#include "JAnimInstance.h"
+#include "Engine/SkeletalMeshSocket.h"
 
 // Sets default values
 AJCharacter::AJCharacter()
@@ -40,14 +44,24 @@ AJCharacter::AJCharacter()
 
 	AttributeComponent = CreateDefaultSubobject<UJAttributeComponent>("AttributeComponent");
 
+	CharacterUI = CreateDefaultSubobject<UWidgetComponent>("CharacterUI");
+	CharacterUI->SetupAttachment(RootComponent);
+
+	RightWeapon = CreateDefaultSubobject<UStaticMeshComponent>("RightWeaponComponent");
+	RightWeapon->SetupAttachment(GetMesh(), "RightWeapon");
+
 	GetCharacterMovement()->bOrientRotationToMovement = true; // Character moves in the direction of input...	
 
-	bIsPressedJump = false;
+	bIsMove = false;
 	bIsRun = false;
+	bIsPressedJump = false;
+	bIsPressedAttack = false;
+	
 	WalkSpeed = 350.0f;
 	RunSpeed = 600.0f;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
+	
 
 // Called when the game starts or when spawned
 void AJCharacter::BeginPlay()
@@ -62,6 +76,9 @@ void AJCharacter::BeginPlay()
 			Subsystem->AddMappingContext(DefaultMappingContext, 0);
 		}
 	}
+
+	AnimClass = Cast<UJAnimInstance>(GetMesh()->AnimScriptInstance);
+	//GEngine->AddOnScreenDebugMessage(-1, 15.0f, FColor::Magenta, UKismetStringLibrary::Conv_BoolToString(AnimClass->bIsInAttack));
 }
 
 // Called every frame
@@ -102,6 +119,7 @@ void AJCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 		//Moving
 		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Triggered, this, &AJCharacter::Move);
+		EnhancedInputComponent->BindAction(MoveAction, ETriggerEvent::Completed, this, &AJCharacter::Move);
 
 		EnhancedInputComponent->BindAction(AccelerateAction, ETriggerEvent::Triggered, this, &AJCharacter::StartAccelerate);
 		EnhancedInputComponent->BindAction(AccelerateAction, ETriggerEvent::Completed, this, &AJCharacter::StopAccelerate);
@@ -113,35 +131,41 @@ void AJCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 		//Looking
 		EnhancedInputComponent->BindAction(LookAction, ETriggerEvent::Triggered, this, &AJCharacter::Look);
 
+		EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Triggered, this, &AJCharacter::Attack);
+		//EnhancedInputComponent->BindAction(AttackAction, ETriggerEvent::Completed, this, &AJCharacter::Attack);
 	}
 }
 
 void AJCharacter::Move(const FInputActionValue& Value)
 {
-	// input is a Vector2D
-	FVector2D MovementVector = Value.Get<FVector2D>();
-
-	if (Controller != nullptr)
+	if (!AnimClass->bIsInAttack)
 	{
-		// find out which way is forward
-		const FRotator Rotation = Controller->GetControlRotation();
-		const FRotator YawRotation(0, Rotation.Yaw, 0);
+		// input is a Vector2D
+		FVector2D MovementVector = Value.Get<FVector2D>();
+		bIsMove = MovementVector.Length() > 0.0f;
 
-		// get forward vector
-		const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+		if (Controller != nullptr)
+		{
+			// find out which way is forward
+			const FRotator Rotation = Controller->GetControlRotation();
+			const FRotator YawRotation(0, Rotation.Yaw, 0);
 
-		// get right vector 
-		const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+			// get forward vector
+			const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 
-		// add movement 
-		AddMovementInput(ForwardDirection, MovementVector.Y);
-		AddMovementInput(RightDirection, MovementVector.X);
+			// get right vector 
+			const FVector RightDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::Y);
+
+			// add movement 
+			AddMovementInput(ForwardDirection, MovementVector.Y);
+			AddMovementInput(RightDirection, MovementVector.X);
+		}
 	}
 }
 
 void AJCharacter::StartAccelerate(const FInputActionValue& Value)
 {
-	if (Controller != nullptr)
+	if (Controller != nullptr && bIsMove)
 	{
 		bIsRun = true;
 
@@ -175,46 +199,6 @@ void AJCharacter::StopAccelerate(const FInputActionValue& Value)
 	}
 }
 
-void AJCharacter::StartJump(const FInputActionValue& Value)
-{
-	if (!bIsPressedJump)
-	{
-		bIsPressedJump = true;
-
-		GetCharacterMovement()->Velocity = FVector(0);
-		//GetCharacterMovement()->MaxWalkSpeed = 0.0f;
-	}
-}
-
-void AJCharacter::Jumpping()
-{
-	//GetCharacterMovement()->MaxWalkSpeed = StartMaxWalkSpeed;
-
-	//const FRotator Rotation = GetActorRotation();
-	//const FRotator YawRotation(0, Rotation.Yaw, 0);
-
-	//const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-
-	//GetCharacterMovement()->Velocity = ForwardDirection * 1100.0f;
-}
-
-void AJCharacter::Land()
-{
-	GetCharacterMovement()->Velocity = FVector(0);
-	//GetCharacterMovement()->MaxWalkSpeed = 0.0f;
-}
-
-void AJCharacter::StopJump()
-{
-	if (bIsPressedJump)
-	{
-		bIsPressedJump = false;
-
-		GetCharacterMovement()->Velocity = FVector(0);
-		//GetCharacterMovement()->MaxWalkSpeed = StartMaxWalkSpeed;
-	}
-}
-
 void AJCharacter::Look(const FInputActionValue& Value)
 {
 	// input is a Vector2D
@@ -226,4 +210,29 @@ void AJCharacter::Look(const FInputActionValue& Value)
 		AddControllerYawInput(LookAxisVector.X);
 		AddControllerPitchInput(LookAxisVector.Y);
 	}
+}
+
+void AJCharacter::Attack(const FInputActionValue& Value)
+{
+	GetWorldTimerManager().PauseTimer(AttackBiasTimer);
+
+	if (!bIsPressedAttack)
+	{
+		bIsPressedAttack = true;
+	}
+
+	GetWorldTimerManager().SetTimer(AttackBiasTimer, this, &AJCharacter::AttackTimeElapsed, 0.4f);
+}
+
+void AJCharacter::AttackTimeElapsed()
+{
+	bIsPressedAttack = false;
+}
+
+void AJCharacter::AttackMove()
+{
+	const FRotator Rotation = GetActorRotation();
+	const FRotator YawRotation(0, Rotation.Yaw, 0);
+	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	GetCharacterMovement()->Velocity = ForwardDirection * 330.0f;
 }

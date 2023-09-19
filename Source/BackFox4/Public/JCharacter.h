@@ -10,8 +10,10 @@
 class USpringArmComponent;
 class UCameraComponent;
 class UJAttributeComponent;
+class UWidgetComponent;
 class UInputMappingContext;
 class UInputAction;
+class UJAnimInstance;
 
 UCLASS()
 class BACKFOX4_API AJCharacter : public ACharacter
@@ -30,6 +32,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Component, meta = (AllowPrivateAccess = "true"))
 		UJAttributeComponent* AttributeComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Component, meta = (AllowPrivateAccess = "true"))
+		UWidgetComponent* CharacterUI;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Component, meta = (AllowPrivateAccess = "true"))
+		UStaticMeshComponent* RightWeapon;
+
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		UInputMappingContext* DefaultMappingContext;
@@ -45,23 +53,33 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		UInputAction* LookAction;
-
 	
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+		UInputAction* AttackAction;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+		bool bIsMove;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		bool bIsRun;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		bool bIsPressedJump;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+		bool bIsPressedAttack;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	float WalkSpeed;
+		float WalkSpeed;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
-	float RunSpeed;
+		float RunSpeed;
 
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		TSubclassOf<class UCameraShakeBase> AccelerateCameraShake;
 
 
+
+	FTimerHandle AttackBiasTimer;
+
+	UJAnimInstance* AnimClass;
 	
 
 public:
@@ -78,19 +96,15 @@ protected:
 	void StartAccelerate(const FInputActionValue& Value);
 	void StopAccelerate(const FInputActionValue& Value);
 
-	void StartJump(const FInputActionValue& Value);
-
-	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
-		void Jumpping();
-
-	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
-		void Land();
-
-	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
-		void StopJump();
-
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
+
+	void Attack(const FInputActionValue& Value);
+
+	void AttackTimeElapsed();
+
+	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
+		void AttackMove();
 
 public:	
 	// Called every frame
