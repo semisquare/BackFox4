@@ -14,6 +14,7 @@
 #include "Components/WidgetComponent.h"
 #include "JAnimInstance.h"
 #include "Engine/SkeletalMeshSocket.h"
+#include "Components/CapsuleComponent.h"
 
 // Sets default values
 AJCharacter::AJCharacter()
@@ -68,8 +69,9 @@ void AJCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	PlayerController = Cast<APlayerController>(GetController());
 	//Add Input Mapping Context
-	if (APlayerController* PlayerController = Cast<APlayerController>(Controller))
+	if (PlayerController)
 	{
 		if (UEnhancedInputLocalPlayerSubsystem* Subsystem = ULocalPlayer::GetSubsystem<UEnhancedInputLocalPlayerSubsystem>(PlayerController->GetLocalPlayer()))
 		{
@@ -169,16 +171,15 @@ void AJCharacter::StartAccelerate(const FInputActionValue& Value)
 	{
 		bIsRun = true;
 
-		APlayerController* PC = Cast<APlayerController>(GetController());
-		if (PC)
+		if (PlayerController)
 		{
 			if (AttributeComponent->IsExhausted())
 			{
-				PC->ClientStopCameraShake(AccelerateCameraShake);
+				PlayerController->ClientStopCameraShake(AccelerateCameraShake);
 			}
 			else
 			{
-				PC->ClientStartCameraShake(AccelerateCameraShake);
+				PlayerController->ClientStartCameraShake(AccelerateCameraShake);
 			}
 		}
 		
@@ -191,10 +192,9 @@ void AJCharacter::StopAccelerate(const FInputActionValue& Value)
 	{
 		bIsRun = false;
 
-		APlayerController* PC = Cast<APlayerController>(GetController());
-		if (PC)
+		if (PlayerController)
 		{
-			PC->ClientStopCameraShake(AccelerateCameraShake);
+			PlayerController->ClientStopCameraShake(AccelerateCameraShake);
 		}
 	}
 }
@@ -235,4 +235,20 @@ void AJCharacter::AttackMove()
 	const FRotator YawRotation(0, Rotation.Yaw, 0);
 	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
 	GetCharacterMovement()->Velocity = ForwardDirection * 330.0f;
+}
+
+void AJCharacter::StartAttackShake()
+{
+	PlayerController->ClientStartCameraShake(AttackCameraShake);
+
+	GetWorldTimerManager().SetTimer(AttackShakeTimer, this, &AJCharacter::StopAttackShake, 0.2f);
+
+	GetMesh()->GlobalAnimRateScale = 0.1f;
+}
+
+void AJCharacter::StopAttackShake()
+{
+	PlayerController->ClientStartCameraShake(AttackCameraShake);
+
+	GetMesh()->GlobalAnimRateScale = 1.f;
 }

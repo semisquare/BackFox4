@@ -74,13 +74,18 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
 		TSubclassOf<class UCameraShakeBase> AccelerateCameraShake;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Camera, meta = (AllowPrivateAccess = "true"))
+		TSubclassOf<class UCameraShakeBase> AttackCameraShake;
 
 
 
 	FTimerHandle AttackBiasTimer;
+	FTimerHandle AttackShakeTimer;
 
 	UJAnimInstance* AnimClass;
-	
+
+
+	APlayerController* PlayerController;
 
 public:
 	// Sets default values for this character's properties
@@ -113,4 +118,6 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	void StartAttackShake();
+	void StopAttackShake();
 };
