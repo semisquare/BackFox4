@@ -14,6 +14,7 @@ class UWidgetComponent;
 class UInputMappingContext;
 class UInputAction;
 class UJAnimInstance;
+class UNiagaraSystem;
 
 UCLASS()
 class BACKFOX4_API AJCharacter : public ACharacter
@@ -78,9 +79,19 @@ protected:
 		TSubclassOf<class UCameraShakeBase> AttackCameraShake;
 
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Effect, meta = (AllowPrivateAccess = "true"))
+		UNiagaraSystem* WeaponEffect;
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Sound, meta = (AllowPrivateAccess = "true"))
+		USoundBase* WeaponES;
+
 
 	FTimerHandle AttackBiasTimer;
 	FTimerHandle AttackShakeTimer;
+
+	TArray<FHitResult> FocusHitResults;
+	TArray<AActor*> ActorsToIgnoreFocus;
 
 	UJAnimInstance* AnimClass;
 
@@ -111,6 +122,9 @@ protected:
 	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
 		void AttackMove();
 
+	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
+		void SetAttackDirection();
+
 public:	
 	// Called every frame
 	virtual void Tick(float DeltaTime) override;
@@ -118,6 +132,6 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	void StartAttackShake();
+	void StartAttackShake(USkeletalMeshComponent* MeshComp, FVector NiagaraLocation, FRotator NiagaraRotator);
 	void StopAttackShake();
 };

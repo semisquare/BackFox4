@@ -4,6 +4,8 @@
 
 #include "JCharacter.h"
 #include "Kismet/KismetStringLibrary.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "GameFramework/SpringArmComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Camera/CameraComponent.h"
@@ -15,6 +17,8 @@
 #include "JAnimInstance.h"
 #include "Engine/SkeletalMeshSocket.h"
 #include "Components/CapsuleComponent.h"
+#include "NiagaraFunctionLibrary.h"
+#include "JAICharacter.h"
 
 // Sets default values
 AJCharacter::AJCharacter()
@@ -215,7 +219,7 @@ void AJCharacter::Look(const FInputActionValue& Value)
 void AJCharacter::Attack(const FInputActionValue& Value)
 {
 	GetWorldTimerManager().PauseTimer(AttackBiasTimer);
-
+	
 	if (!bIsPressedAttack)
 	{
 		bIsPressedAttack = true;
@@ -237,13 +241,58 @@ void AJCharacter::AttackMove()
 	GetCharacterMovement()->Velocity = ForwardDirection * 330.0f;
 }
 
-void AJCharacter::StartAttackShake()
+void AJCharacter::SetAttackDirection()
 {
+	FocusHitResults.Empty();
+
+	UKismetSystemLibrary::SphereTraceMulti(this, GetActorLocation(), GetActorLocation(), 200.f, ETraceTypeQuery::TraceTypeQuery3,
+		false, ActorsToIgnoreFocus, EDrawDebugTrace::None, FocusHitResults, true);
+
+	if (FocusHitResults.Num() <= 0) return;
+
+	float DistanceTo = 9999999.0f;
+	FVector DirectionTo = FVector(0);
+	bool bIsRotate = false;
+
+	for (int i = 0; i < FocusHitResults.Num(); i++)
+	{
+		AActor* FocusOne = FocusHitResults[i].GetActor();
+		if (FocusOne && FocusOne->ActorHasTag("Enemy"))
+		{
+			float TempDistanceTo = FVector::Dist2D(FocusOne->GetActorLocation(), GetActorLocation());
+			if (DistanceTo > TempDistanceTo) {
+				DistanceTo = TempDistanceTo;
+
+				DirectionTo = FocusOne->GetActorLocation() - GetActorLocation();
+				DirectionTo = FVector(DirectionTo.X, DirectionTo.Y, 0);
+				DirectionTo.Normalize();
+
+				//GEngine->AddOnScreenDebugMessage(0, 1.1f, FColor::Red, FString::SanitizeFloat(DistanceTo));
+
+				bIsRotate = true;
+			}
+		}
+		
+	}
+
+	if (bIsRotate)
+	{
+		//GetController()->SetControlRotation(DirectionTo.Rotation());
+		SetActorRotation(DirectionTo.Rotation());
+	}
+}
+
+void AJCharacter::StartAttackShake(USkeletalMeshComponent* MeshComp, FVector NiagaraLocation, FRotator NiagaraRotator)
+{
+	UGameplayStatics::PlaySound2D(this, WeaponES, 1.0f, FMath::RandRange(0.8f, 1.2f));
+
 	PlayerController->ClientStartCameraShake(AttackCameraShake);
 
-	GetWorldTimerManager().SetTimer(AttackShakeTimer, this, &AJCharacter::StopAttackShake, 0.2f);
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(MeshComp, WeaponEffect, NiagaraLocation, NiagaraRotator);
 
 	GetMesh()->GlobalAnimRateScale = 0.1f;
+
+	GetWorldTimerManager().SetTimer(AttackShakeTimer, this, &AJCharacter::StopAttackShake, 0.1f);
 }
 
 void AJCharacter::StopAttackShake()

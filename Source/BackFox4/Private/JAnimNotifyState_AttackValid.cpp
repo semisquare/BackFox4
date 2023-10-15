@@ -3,9 +3,9 @@
 
 #include "JAnimNotifyState_AttackValid.h"
 #include "JCharacter.h"
+#include "JAICharacter.h"
 #include "Components/SkeletalMeshComponent.h"
 #include "Kismet/KismetSystemLibrary.h"
-#include "Kismet/GameplayStatics.h"
 #include "GameFramework/Controller.h"
 
 
@@ -19,14 +19,15 @@ void UJAnimNotifyState_AttackValid::NotifyTick(USkeletalMeshComponent* MeshComp,
 	for (int i = 0; i < HitResults.Num(); i++)
 	{
 		//获取本次射线击中的敌人
-		AActor* HitEnemy = HitResults[i].GetActor();
+		AJAICharacter* HitEnemy = Cast<AJAICharacter>(HitResults[i].GetActor());
 		//查询数组中是否有本次击中的Actor，如果没有则加入数组，防止一次通知内多次击中的情况
 		if (HitEnemy && !HitEnemies.Contains(HitEnemy) && HitEnemy->ActorHasTag("Enemy"))
 		{
-			GEngine->AddOnScreenDebugMessage(0, 0.1f, FColor::Red, HitEnemy->GetName());
-			HitEnemies.Add(HitEnemy);
 
-			Player->StartAttackShake();
+			HitEnemies.Add(HitEnemy);
+			
+			Player->StartAttackShake(MeshComp, HitResults[i].ImpactPoint, HitResults[i].ImpactNormal.Rotation());
+			HitEnemy->Attacked(Player, HitResults[i].BoneName, HitResults[i].ImpactPoint, HitResults[i].ImpactNormal);
 
 			//if (HitEnemy->InteractParticle) { //播放敌人受伤粒子特效
 			//	UGameplayStatics::SpawnEmitterAtLocation(HitEnemy, HitEnemy->InteractParticle, HitResults[i].Location);
