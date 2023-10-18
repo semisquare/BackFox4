@@ -36,5 +36,5 @@ public:
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
 	void Attacked(class AJCharacter* Player, FName HittedBone, FVector HitPoint, FVector HitImpulse);
-	void AttackedEnd(FName HittedBone);
+	void AttackedEnd(FName HittedBone, FVector InitialLocation);
 };

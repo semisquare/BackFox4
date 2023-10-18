@@ -38,25 +38,29 @@ void AJAICharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 void AJAICharacter::Attacked(AJCharacter* Player, FName HittedBone, FVector HitPoint, FVector HitImpulse)
 {
-	//if (HittedBone == "None" || HittedBone == "pelvis" || HittedBone == "Root") return;
+	if (HittedBone == "None" || HittedBone == "pelvis" || HittedBone == "Root" || HittedBone == "Hips") return;
+
+	FVector InitialLocation = GetMesh()->GetRelativeLocation();
 
 	FVector DirectionTo = GetMesh()->GetBoneLocation(HittedBone) - Player->GetActorLocation();
 	DirectionTo = FVector(DirectionTo.X, DirectionTo.Y, 0);
 	DirectionTo.Normalize();
-	ApplyWorldOffset(DirectionTo * 22.f, true);
+	//ApplyWorldOffset(DirectionTo * 22.f, true);
 
 	GetMesh()->SetAllBodiesBelowSimulatePhysics(HittedBone, true);
 	GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(HittedBone, 0.3f);
-	GetMesh()->AddImpulseAtLocation(HitImpulse * 10.f, HitPoint, HittedBone);
+	GetMesh()->AddImpulseAtLocation(HitImpulse * 22.f, HitPoint, HittedBone);
 
-	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &AJAICharacter::AttackedEnd, HittedBone);
+	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &AJAICharacter::AttackedEnd, HittedBone, InitialLocation);
 	GetWorldTimerManager().SetTimer(AttackedTimer, TimerDelegate, 0.1f, false);
 }
 
-void AJAICharacter::AttackedEnd(FName HittedBone)
+void AJAICharacter::AttackedEnd(FName HittedBone, FVector InitialLocation)
 {
 	GetMesh()->SetAllBodiesSimulatePhysics(false);
 	GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(HittedBone, 0);
+	GetMesh()->SetRelativeLocation(InitialLocation);
+	//GetMesh()->SetRelativeRotation(FRotator(0, 0, GetMesh()->GetRelativeRotation().Roll));
 }
 
 
