@@ -19,6 +19,7 @@
 #include "Components/CapsuleComponent.h"
 #include "NiagaraFunctionLibrary.h"
 #include "JAICharacter.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 
 // Sets default values
 AJCharacter::AJCharacter()
@@ -39,8 +40,8 @@ AJCharacter::AJCharacter()
 	SpringArmComponent->CameraLagSpeed = 8.0f;
 	SpringArmComponent->CameraRotationLagSpeed = 9.0f;
 	
-	IdleArmLength = 420.0f;
-	RunArmLength = 500.0f;
+	IdleArmLength = 380.0f;
+	RunArmLength = 480.0f;
 	SpringArmComponent->TargetArmLength = IdleArmLength;
 
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>("CameraComponent");
@@ -62,8 +63,8 @@ AJCharacter::AJCharacter()
 	bIsPressedJump = false;
 	bIsPressedAttack = false;
 	
-	WalkSpeed = 350.0f;
-	RunSpeed = 600.0f;
+	WalkSpeed = 470.0f;
+	RunSpeed = 700.0f;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 	
@@ -91,7 +92,7 @@ void AJCharacter::BeginPlay()
 void AJCharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
-
+	
 	if (bIsRun && !AttributeComponent->IsExhausted())
 	{
 		GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(GetCharacterMovement()->MaxWalkSpeed, RunSpeed, DeltaTime, 7.0f);
@@ -167,6 +168,10 @@ void AJCharacter::Move(const FInputActionValue& Value)
 			AddMovementInput(RightDirection, MovementVector.X);
 		}
 	}
+	else
+	{
+		bIsMove = false;
+	}
 }
 
 void AJCharacter::StartAccelerate(const FInputActionValue& Value)
@@ -187,6 +192,10 @@ void AJCharacter::StartAccelerate(const FInputActionValue& Value)
 			}
 		}
 		
+	}
+	else
+	{
+		bIsRun = false;
 	}
 }
 
@@ -223,6 +232,8 @@ void AJCharacter::Attack(const FInputActionValue& Value)
 	if (!bIsPressedAttack)
 	{
 		bIsPressedAttack = true;
+
+		GetCharacterMovement()->Velocity = GetActorForwardVector() * 0.0f;
 	}
 
 	GetWorldTimerManager().SetTimer(AttackBiasTimer, this, &AJCharacter::AttackTimeElapsed, 0.4f);
@@ -235,10 +246,10 @@ void AJCharacter::AttackTimeElapsed()
 
 void AJCharacter::AttackMove()
 {
-	const FRotator Rotation = GetActorRotation();
-	const FRotator YawRotation(0, Rotation.Yaw, 0);
-	const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	GetCharacterMovement()->Velocity = ForwardDirection * 220.0f;
+	//const FRotator Rotation = GetActorRotation();
+	//const FRotator YawRotation(0, Rotation.Yaw, 0);
+	//const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
+	GetCharacterMovement()->Velocity = GetActorForwardVector() * 420.0f;
 }
 
 void AJCharacter::SetAttackDirection()
@@ -267,7 +278,7 @@ void AJCharacter::SetAttackDirection()
 				DirectionTo = FVector(DirectionTo.X, DirectionTo.Y, 0);
 				DirectionTo.Normalize();
 
-				//GEngine->AddOnScreenDebugMessage(0, 1.1f, FColor::Red, FString::SanitizeFloat(DistanceTo));
+				//GEngine->AddOnScreenDebugMessage(0, 1.1f, FColor::Red, FocusOne->GetActorLocation().ToString());
 
 				bIsRotate = true;
 			}
@@ -282,13 +293,25 @@ void AJCharacter::SetAttackDirection()
 	}
 }
 
-void AJCharacter::StartAttackShake(USkeletalMeshComponent* MeshComp, FVector NiagaraLocation, FRotator NiagaraRotator)
+void AJCharacter::StartAttackShake(USkeletalMeshComponent* MeshComp, AJAICharacter* HitEnemy, FVector NiagaraLocation, FRotator NiagaraRotator)
 {
 	UGameplayStatics::PlaySound2D(this, WeaponES, 1.0f, FMath::RandRange(0.8f, 1.2f));
 
 	PlayerController->ClientStartCameraShake(AttackCameraShake);
 
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(MeshComp, WeaponEffect, NiagaraLocation, NiagaraRotator);
+	//if (FloatTextWidget)
+	//{
+	//	UUserWidget* FloatTextWidgetRef = CreateWidget<UUserWidget>(GetWorld(), FloatTextWidget);
+	//	if (FloatTextWidgetRef)
+	//	{
+	//		FVector2D ScreenPosition = FVector2D(0);
+	//		UGameplayStatics::ProjectWorldToScreen(Cast<APlayerController>(GetController()), HitEnemy->GetActorLocation(), ScreenPosition);
+
+	//		FloatTextWidgetRef->AddToViewport();
+	//		FloatTextWidgetRef->SetPositionInViewport(ScreenPosition / UWidgetLayoutLibrary::GetViewportScale(this));
+	//	}
+	//}
 
 	GetMesh()->GlobalAnimRateScale = 0.1f;
 

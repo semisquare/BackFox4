@@ -7,6 +7,10 @@
 #include "JAICharacter.generated.h"
 
 class UJAttributeComponent;
+class UPawnSensingComponent;
+class UWidgetComponent;
+class UBlackboardComponent;
+class UNiagaraSystem;
 
 UCLASS()
 class BACKFOX4_API AJAICharacter : public ACharacter
@@ -17,8 +21,27 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Component, meta = (AllowPrivateAccess = "true"))
 		UJAttributeComponent* AttributeComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Component, meta = (AllowPrivateAccess = "true"))
+		UPawnSensingComponent* PawnSensingComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Component, meta = (AllowPrivateAccess = "true"))
+		UWidgetComponent* CharacterUI;
+
 
 	FTimerHandle AttackedTimer;
+
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+		bool bIsAttacked;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+		bool bIsAlive;
+
+	UBlackboardComponent* BBComp;
+
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Effect, meta = (AllowPrivateAccess = "true"))
+		UNiagaraSystem* DeathEffect;
 
 public:
 	// Sets default values for this character's properties
@@ -27,6 +50,12 @@ public:
 protected:
 	// Called when the game starts or when spawned
 	virtual void BeginPlay() override;
+
+	UFUNCTION()
+		void OnSeePawn(APawn* Pawn);
+
+	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
+		void SetDeath();
 
 public:	
 	// Called every frame

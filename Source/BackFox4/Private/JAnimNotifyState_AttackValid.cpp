@@ -26,7 +26,7 @@ void UJAnimNotifyState_AttackValid::NotifyTick(USkeletalMeshComponent* MeshComp,
 
 			HitEnemies.Add(HitEnemy);
 			
-			Player->StartAttackShake(MeshComp, HitResults[i].ImpactPoint, HitResults[i].ImpactNormal.Rotation());
+			Player->StartAttackShake(MeshComp, HitEnemy, HitResults[i].ImpactPoint, HitResults[i].ImpactNormal.Rotation());
 			HitEnemy->Attacked(Player, HitResults[i].BoneName, HitResults[i].ImpactPoint, HitResults[i].ImpactNormal);
 
 			//if (HitEnemy->InteractParticle) { //播放敌人受伤粒子特效

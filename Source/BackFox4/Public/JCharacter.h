@@ -83,6 +83,10 @@ protected:
 		UNiagaraSystem* WeaponEffect;
 
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = UI, meta = (AllowPrivateAccess = "true"))
+		TSubclassOf<UUserWidget> FloatTextWidget;
+
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Sound, meta = (AllowPrivateAccess = "true"))
 		USoundBase* WeaponES;
 
@@ -132,6 +136,6 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
-	void StartAttackShake(USkeletalMeshComponent* MeshComp, FVector NiagaraLocation, FRotator NiagaraRotator);
+	void StartAttackShake(USkeletalMeshComponent* MeshComp, class AJAICharacter* HitEnemy, FVector NiagaraLocation, FRotator NiagaraRotator);
 	void StopAttackShake();
 };

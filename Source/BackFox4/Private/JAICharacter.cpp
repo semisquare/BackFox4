@@ -3,7 +3,14 @@
 
 #include "JAICharacter.h"
 #include "JCharacter.h"
+#include "Perception/PawnSensingComponent.h"
 #include "JAttributeComponent.h"
+#include "AIController.h"
+#include "BehaviorTree/BlackboardComponent.h"
+#include "Components/WidgetComponent.h"
+#include "Kismet/GameplayStatics.h"
+#include "BrainComponent.h"
+#include "NiagaraFunctionLibrary.h"
 
 // Sets default values
 AJAICharacter::AJAICharacter()
@@ -11,8 +18,16 @@ AJAICharacter::AJAICharacter()
  	// Set this character to call Tick() every frame.  You can turn this off to improve performance if you don't need it.
 	PrimaryActorTick.bCanEverTick = true;
 
+	PawnSensingComponent = CreateDefaultSubobject<UPawnSensingComponent>("PawnSensingComponent");
+
 	AttributeComponent = CreateDefaultSubobject<UJAttributeComponent>("AttributeComponent");
 
+	CharacterUI = CreateDefaultSubobject<UWidgetComponent>("CharacterUI");
+	CharacterUI->SetupAttachment(RootComponent);
+	
+	bIsAttacked = false;
+
+	bIsAlive = true;
 }
 
 // Called when the game starts or when spawned
@@ -20,6 +35,25 @@ void AJAICharacter::BeginPlay()
 {
 	Super::BeginPlay();
 	
+	PawnSensingComponent->OnSeePawn.AddDynamic(this, &AJAICharacter::OnSeePawn);
+
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController)
+	{
+		BBComp = AIController->GetBlackboardComponent();
+	}
+}
+
+void AJAICharacter::OnSeePawn(APawn* Pawn)
+{
+	BBComp->SetValueAsObject("TargetActor", Pawn);
+}
+
+void AJAICharacter::SetDeath()
+{
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DeathEffect, GetMesh()->GetBoneLocation("Hips"), FRotator(0));
+
+	Destroy();
 }
 
 // Called every frame
@@ -40,16 +74,21 @@ void AJAICharacter::Attacked(AJCharacter* Player, FName HittedBone, FVector HitP
 {
 	if (HittedBone == "None" || HittedBone == "pelvis" || HittedBone == "Root" || HittedBone == "Hips") return;
 
+	bIsAttacked = true;
+
 	FVector InitialLocation = GetMesh()->GetRelativeLocation();
 
 	FVector DirectionTo = GetMesh()->GetBoneLocation(HittedBone) - Player->GetActorLocation();
 	DirectionTo = FVector(DirectionTo.X, DirectionTo.Y, 0);
 	DirectionTo.Normalize();
-	//ApplyWorldOffset(DirectionTo * 22.f, true);
+	ApplyWorldOffset(DirectionTo * 42.f, true);
 
-	GetMesh()->SetAllBodiesBelowSimulatePhysics(HittedBone, true);
-	GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(HittedBone, 0.3f);
-	GetMesh()->AddImpulseAtLocation(HitImpulse * 22.f, HitPoint, HittedBone);
+	UJAttributeComponent* PlayerAttributeComp = Player->GetComponentByClass<UJAttributeComponent>();
+	AttributeComponent->ApplyHealthChange(-PlayerAttributeComp->GetDamage());
+
+	//GetMesh()->SetAllBodiesBelowSimulatePhysics(HittedBone, true);
+	//GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(HittedBone, 0.3f);
+	//GetMesh()->AddImpulseAtLocation(HitImpulse * 22.f, HitPoint, HittedBone);
 
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &AJAICharacter::AttackedEnd, HittedBone, InitialLocation);
 	GetWorldTimerManager().SetTimer(AttackedTimer, TimerDelegate, 0.1f, false);
@@ -57,10 +96,28 @@ void AJAICharacter::Attacked(AJCharacter* Player, FName HittedBone, FVector HitP
 
 void AJAICharacter::AttackedEnd(FName HittedBone, FVector InitialLocation)
 {
-	GetMesh()->SetAllBodiesSimulatePhysics(false);
-	GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(HittedBone, 0);
-	GetMesh()->SetRelativeLocation(InitialLocation);
+	bIsAttacked = false;
+
+	//GetMesh()->SetAllBodiesSimulatePhysics(false);
+	//GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(HittedBone, 0);
+	//GetMesh()->SetRelativeLocation(InitialLocation);
+
 	//GetMesh()->SetRelativeRotation(FRotator(0, 0, GetMesh()->GetRelativeRotation().Roll));
+
+	if (AttributeComponent->IsDead())
+	{
+		bIsAlive = false;
+
+		AAIController* AIController = Cast<AAIController>(GetController());
+		if (AIController)
+		{
+			BBComp = AIController->GetBlackboardComponent();
+
+			AIController->GetBrainComponent()->StopLogic("Dead");
+		}
+
+		GetMesh()->SetCollisionProfileName("NoCollision");
+	}
 }
 
 

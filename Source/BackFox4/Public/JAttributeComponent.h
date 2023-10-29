@@ -6,7 +6,9 @@
 #include "Components/ActorComponent.h"
 #include "JAttributeComponent.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnHealthChanged, AActor*, InstigatorActor, UJAttributeComponent*, OwingComp, float, NewHealth, float, Delta, bool, bIsNoHealth);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnStaminaChanged, AActor*, InstigatorActor, UJAttributeComponent*, OwingComp, float, NewStamina, float, Delta, bool, bIsNoStamina);
+
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent) )
 class BACKFOX4_API UJAttributeComponent : public UActorComponent
@@ -23,6 +25,15 @@ protected:
 	virtual void BeginPlay() override;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Attributes)
+		float Health;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Attributes)
+		float HealthMax;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Attributes)
+		bool bIsDeath;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Attributes)
 		float Stamina;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Attributes)
@@ -31,9 +42,21 @@ protected:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Attributes)
 		bool bIsExhasuted;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = Attributes)
+		float Damage;
+
 public:	
 	// Called every frame
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
+	UFUNCTION(BlueprintCallable)
+		bool ApplyHealthChange(float Delta);
+
+	UFUNCTION(BlueprintCallable)
+		bool IsDead();
+
+	UPROPERTY(BlueprintAssignable)
+		FOnHealthChanged OnHealthChanged;
 
 	UFUNCTION(BlueprintCallable)
 		bool ApplyStaminaChange(float Delta);
@@ -46,4 +69,7 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 		FOnStaminaChanged OnStaminaChanged;
+
+	UFUNCTION(BlueprintCallable)
+		float GetDamage();
 };
