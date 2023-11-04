@@ -7,6 +7,8 @@
 #include "InputActionValue.h"
 #include "JCharacter.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStartAttack, AActor*, InstigatorActor);
+
 class USpringArmComponent;
 class UCameraComponent;
 class UJAttributeComponent;
@@ -136,6 +138,11 @@ public:
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
 
+	UPROPERTY(BlueprintAssignable)
+		FOnStartAttack OnStartAttack;
+
 	void StartAttackShake(USkeletalMeshComponent* MeshComp, class AJAICharacter* HitEnemy, FVector NiagaraLocation, FRotator NiagaraRotator);
 	void StopAttackShake();
+
+	UJAttributeComponent* GetAttributeComponent();
 };

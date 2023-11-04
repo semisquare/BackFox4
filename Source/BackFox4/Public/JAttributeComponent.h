@@ -7,6 +7,7 @@
 #include "JAttributeComponent.generated.h"
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnHealthChanged, AActor*, InstigatorActor, UJAttributeComponent*, OwingComp, float, NewHealth, float, Delta, bool, bIsNoHealth);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FInDeath, AActor*, InstigatorActor, UJAttributeComponent*, OwingComp);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_FiveParams(FOnStaminaChanged, AActor*, InstigatorActor, UJAttributeComponent*, OwingComp, float, NewStamina, float, Delta, bool, bIsNoStamina);
 
 
@@ -57,6 +58,9 @@ public:
 
 	UPROPERTY(BlueprintAssignable)
 		FOnHealthChanged OnHealthChanged;
+
+	UPROPERTY(BlueprintAssignable)
+		FInDeath InDeath;
 
 	UFUNCTION(BlueprintCallable)
 		bool ApplyStaminaChange(float Delta);

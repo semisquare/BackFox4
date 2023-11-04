@@ -249,7 +249,7 @@ void AJCharacter::AttackMove()
 	//const FRotator Rotation = GetActorRotation();
 	//const FRotator YawRotation(0, Rotation.Yaw, 0);
 	//const FVector ForwardDirection = FRotationMatrix(YawRotation).GetUnitAxis(EAxis::X);
-	GetCharacterMovement()->Velocity = GetActorForwardVector() * 420.0f;
+	GetCharacterMovement()->Velocity = GetActorForwardVector() * 620.0f;
 }
 
 void AJCharacter::SetAttackDirection()
@@ -316,6 +316,8 @@ void AJCharacter::StartAttackShake(USkeletalMeshComponent* MeshComp, AJAICharact
 	GetMesh()->GlobalAnimRateScale = 0.1f;
 
 	GetWorldTimerManager().SetTimer(AttackShakeTimer, this, &AJCharacter::StopAttackShake, 0.1f);
+
+	OnStartAttack.Broadcast(MeshComp->GetOwner());
 }
 
 void AJCharacter::StopAttackShake()
@@ -323,4 +325,9 @@ void AJCharacter::StopAttackShake()
 	PlayerController->ClientStartCameraShake(AttackCameraShake);
 
 	GetMesh()->GlobalAnimRateScale = 1.f;
+}
+
+UJAttributeComponent* AJCharacter::GetAttributeComponent()
+{
+	return AttributeComponent;
 }

@@ -46,6 +46,8 @@ bool UJAttributeComponent::ApplyHealthChange(float Delta)
 		if (Health <= 0.0f)
 		{
 			bIsDeath = true;
+
+			InDeath.Broadcast(nullptr, this);
 		}
 
 		if (bIsDeath)

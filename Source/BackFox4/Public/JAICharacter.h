@@ -6,6 +6,8 @@
 #include "GameFramework/Character.h"
 #include "JAICharacter.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAttacked, AActor*, InstigatorActor, float, Damage);
+
 class UJAttributeComponent;
 class UPawnSensingComponent;
 class UWidgetComponent;
@@ -63,6 +65,9 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UPROPERTY(BlueprintAssignable)
+		FOnAttacked OnAttacked;
 
 	void Attacked(class AJCharacter* Player, FName HittedBone, FVector HitPoint, FVector HitImpulse);
 	void AttackedEnd(FName HittedBone, FVector InitialLocation);

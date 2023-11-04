@@ -36,22 +36,21 @@ void AJAICharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	PawnSensingComponent->OnSeePawn.AddDynamic(this, &AJAICharacter::OnSeePawn);
-
-	AAIController* AIController = Cast<AAIController>(GetController());
-	if (AIController)
-	{
-		BBComp = AIController->GetBlackboardComponent();
-	}
 }
 
 void AJAICharacter::OnSeePawn(APawn* Pawn)
 {
-	BBComp->SetValueAsObject("TargetActor", Pawn);
+	AAIController* AIController = Cast<AAIController>(GetController());
+	if (AIController)
+	{
+		BBComp = AIController->GetBlackboardComponent();
+		BBComp->SetValueAsObject("TargetActor", Pawn);
+	}
 }
 
 void AJAICharacter::SetDeath()
 {
-	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DeathEffect, GetMesh()->GetBoneLocation("Hips"), FRotator(0));
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DeathEffect, GetMesh()->GetBoneLocation("Hips"), FRotator(0), GetActorScale());
 
 	Destroy();
 }
@@ -81,10 +80,12 @@ void AJAICharacter::Attacked(AJCharacter* Player, FName HittedBone, FVector HitP
 	FVector DirectionTo = GetMesh()->GetBoneLocation(HittedBone) - Player->GetActorLocation();
 	DirectionTo = FVector(DirectionTo.X, DirectionTo.Y, 0);
 	DirectionTo.Normalize();
-	ApplyWorldOffset(DirectionTo * 42.f, true);
+	ApplyWorldOffset(DirectionTo * 36.f, true);
 
 	UJAttributeComponent* PlayerAttributeComp = Player->GetComponentByClass<UJAttributeComponent>();
-	AttributeComponent->ApplyHealthChange(-PlayerAttributeComp->GetDamage());
+	float PlayerDamage = PlayerAttributeComp->GetDamage();
+	float ActualDamage = int(FMath::Max(FMath::RandRange(PlayerDamage - 3, PlayerDamage + 3), 1));
+	AttributeComponent->ApplyHealthChange(-ActualDamage);
 
 	//GetMesh()->SetAllBodiesBelowSimulatePhysics(HittedBone, true);
 	//GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(HittedBone, 0.3f);
@@ -92,6 +93,8 @@ void AJAICharacter::Attacked(AJCharacter* Player, FName HittedBone, FVector HitP
 
 	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &AJAICharacter::AttackedEnd, HittedBone, InitialLocation);
 	GetWorldTimerManager().SetTimer(AttackedTimer, TimerDelegate, 0.1f, false);
+
+	OnAttacked.Broadcast(nullptr, ActualDamage);
 }
 
 void AJAICharacter::AttackedEnd(FName HittedBone, FVector InitialLocation)
@@ -108,6 +111,8 @@ void AJAICharacter::AttackedEnd(FName HittedBone, FVector InitialLocation)
 	{
 		bIsAlive = false;
 
+		GetMesh()->SetCollisionProfileName("NoCollision");
+
 		AAIController* AIController = Cast<AAIController>(GetController());
 		if (AIController)
 		{
@@ -115,8 +120,7 @@ void AJAICharacter::AttackedEnd(FName HittedBone, FVector InitialLocation)
 
 			AIController->GetBrainComponent()->StopLogic("Dead");
 		}
-
-		GetMesh()->SetCollisionProfileName("NoCollision");
+		
 	}
 }
 
