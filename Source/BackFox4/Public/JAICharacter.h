@@ -45,6 +45,8 @@ protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Effect, meta = (AllowPrivateAccess = "true"))
 		UNiagaraSystem* DeathEffect;
 
+	class AJCharacter* JPlayer;
+
 public:
 	// Sets default values for this character's properties
 	AJAICharacter();
@@ -70,5 +72,5 @@ public:
 		FOnAttacked OnAttacked;
 
 	void Attacked(class AJCharacter* Player, FName HittedBone, FVector HitPoint, FVector HitImpulse);
-	void AttackedEnd(FName HittedBone, FVector InitialLocation);
+	void AttackedEnd(FName HittedBone, FVector InitialLocation, AJCharacter* Player);
 };

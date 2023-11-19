@@ -28,6 +28,8 @@ AJAICharacter::AJAICharacter()
 	bIsAttacked = false;
 
 	bIsAlive = true;
+
+	JPlayer = nullptr;
 }
 
 // Called when the game starts or when spawned
@@ -50,6 +52,12 @@ void AJAICharacter::OnSeePawn(APawn* Pawn)
 
 void AJAICharacter::SetDeath()
 {
+	if (JPlayer)
+	{
+		JPlayer->LockFunc();
+	}
+	
+
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(GetWorld(), DeathEffect, GetMesh()->GetBoneLocation("Hips"), FRotator(0), GetActorScale());
 
 	Destroy();
@@ -73,6 +81,8 @@ void AJAICharacter::Attacked(AJCharacter* Player, FName HittedBone, FVector HitP
 {
 	if (HittedBone == "None" || HittedBone == "pelvis" || HittedBone == "Root" || HittedBone == "Hips") return;
 
+	JPlayer = Player;
+
 	bIsAttacked = true;
 
 	FVector InitialLocation = GetMesh()->GetRelativeLocation();
@@ -91,13 +101,13 @@ void AJAICharacter::Attacked(AJCharacter* Player, FName HittedBone, FVector HitP
 	//GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(HittedBone, 0.3f);
 	//GetMesh()->AddImpulseAtLocation(HitImpulse * 22.f, HitPoint, HittedBone);
 
-	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &AJAICharacter::AttackedEnd, HittedBone, InitialLocation);
-	GetWorldTimerManager().SetTimer(AttackedTimer, TimerDelegate, 0.1f, false);
-
 	OnAttacked.Broadcast(nullptr, ActualDamage);
+
+	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &AJAICharacter::AttackedEnd, HittedBone, InitialLocation, Player);
+	GetWorldTimerManager().SetTimer(AttackedTimer, TimerDelegate, 0.1f, false);
 }
 
-void AJAICharacter::AttackedEnd(FName HittedBone, FVector InitialLocation)
+void AJAICharacter::AttackedEnd(FName HittedBone, FVector InitialLocation, AJCharacter* Player)
 {
 	bIsAttacked = false;
 
@@ -120,6 +130,7 @@ void AJAICharacter::AttackedEnd(FName HittedBone, FVector InitialLocation)
 
 			AIController->GetBrainComponent()->StopLogic("Dead");
 		}
+		
 		
 	}
 }

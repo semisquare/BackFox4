@@ -7,6 +7,7 @@
 #include "InputActionValue.h"
 #include "JCharacter.generated.h"
 
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLock, AActor*, InstigatorActor, bool, bIsInSight);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStartAttack, AActor*, InstigatorActor);
 
 class USpringArmComponent;
@@ -38,9 +39,6 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Component, meta = (AllowPrivateAccess = "true"))
 		UWidgetComponent* CharacterUI;
 
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Component, meta = (AllowPrivateAccess = "true"))
-		UStaticMeshComponent* RightWeapon;
-
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		UInputMappingContext* DefaultMappingContext;
@@ -56,6 +54,9 @@ protected:
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		UInputAction* LookAction;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+		UInputAction* LockAction;
 	
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		UInputAction* AttackAction;
@@ -65,9 +66,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		bool bIsRun;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+		bool bIsDodge;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		bool bIsPressedJump;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+		bool bIsPressedLock;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+		bool bIsLock;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		bool bIsPressedAttack;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+		bool bIsPressedAttackLong;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
+		bool bIsInAttack;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		float WalkSpeed;
@@ -93,6 +104,9 @@ protected:
 		USoundBase* WeaponES;
 
 
+	FTimerHandle DodgeTimer;
+	FTimerHandle LockTimer;
+	FTimerHandle AttackLongTimer;
 	FTimerHandle AttackBiasTimer;
 	FTimerHandle AttackShakeTimer;
 
@@ -103,6 +117,9 @@ protected:
 
 
 	APlayerController* PlayerController;
+
+
+	AActor* LockEnemy;
 
 public:
 	// Sets default values for this character's properties
@@ -118,12 +135,26 @@ protected:
 	void StartAccelerate(const FInputActionValue& Value);
 	void StopAccelerate(const FInputActionValue& Value);
 
+	void Dodge(const FInputActionValue& Value);
+	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
+		void DodgeEnd();
+	void DodgeTimeElapsed();
+
+	virtual void Jump() override;
+	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
+		void Land();
+
 	/** Called for looking input */
 	void Look(const FInputActionValue& Value);
 
-	void Attack(const FInputActionValue& Value);
+	void Lock(const FInputActionValue& Value);
+	void LockTimeElapsed();
+	
 
+	void Attack(const FInputActionValue& Value);
 	void AttackTimeElapsed();
+
+	void AttackLong(const FInputActionValue& Value);
 
 	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
 		void AttackMove();
@@ -137,6 +168,11 @@ public:
 
 	// Called to bind functionality to input
 	virtual void SetupPlayerInputComponent(class UInputComponent* PlayerInputComponent) override;
+
+	UPROPERTY(BlueprintAssignable)
+		FOnLock OnLock;
+
+	void LockFunc();
 
 	UPROPERTY(BlueprintAssignable)
 		FOnStartAttack OnStartAttack;
