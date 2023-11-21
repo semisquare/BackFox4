@@ -42,11 +42,16 @@ void AJAICharacter::BeginPlay()
 
 void AJAICharacter::OnSeePawn(APawn* Pawn)
 {
-	AAIController* AIController = Cast<AAIController>(GetController());
-	if (AIController)
+	if (Pawn->ActorHasTag("Player"))
 	{
-		BBComp = AIController->GetBlackboardComponent();
-		BBComp->SetValueAsObject("TargetActor", Pawn);
+		JPlayer = Cast<AJCharacter>(Pawn);
+
+		AAIController* AIController = Cast<AAIController>(GetController());
+		if (AIController)
+		{
+			BBComp = AIController->GetBlackboardComponent();
+			BBComp->SetValueAsObject("TargetActor", Pawn);
+		}
 	}
 }
 
@@ -68,6 +73,28 @@ void AJAICharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (JPlayer)
+	{
+		FVector DirectionTo = JPlayer->GetActorLocation() - GetActorLocation();
+		DirectionTo.Normalize();
+		FMatrix rotationMatrix = FRotationMatrix::MakeFromXZ(DirectionTo, GetOwner()->GetActorUpVector());
+		SetActorRotation(FRotator(GetActorRotation().Pitch, rotationMatrix.Rotator().Yaw, GetActorRotation().Roll));
+		GetController()->SetControlRotation(GetActorRotation());
+	}
+
+	//if (JPlayer && BBComp)
+	//{
+	//	float DistanceTo = FVector::Dist2D(GetActorLocation(), JPlayer->GetActorLocation());
+	//	if (DistanceTo < 100.0f)
+	//	{
+	//		BBComp->SetValueAsBool("CanAttack", true);
+	//		
+	//	}
+	//	else
+	//	{
+	//		BBComp->SetValueAsBool("CanAttack", false);
+	//	}
+	//}
 }
 
 // Called to bind functionality to input
@@ -81,7 +108,7 @@ void AJAICharacter::Attacked(AJCharacter* Player, FName HittedBone, FVector HitP
 {
 	if (HittedBone == "None" || HittedBone == "pelvis" || HittedBone == "Root" || HittedBone == "Hips") return;
 
-	JPlayer = Player;
+	if(!JPlayer){ JPlayer = Player; }
 
 	bIsAttacked = true;
 
@@ -90,7 +117,7 @@ void AJAICharacter::Attacked(AJCharacter* Player, FName HittedBone, FVector HitP
 	FVector DirectionTo = GetMesh()->GetBoneLocation(HittedBone) - Player->GetActorLocation();
 	DirectionTo = FVector(DirectionTo.X, DirectionTo.Y, 0);
 	DirectionTo.Normalize();
-	ApplyWorldOffset(DirectionTo * 36.f, true);
+	ApplyWorldOffset(DirectionTo * 106.f, true);
 
 	UJAttributeComponent* PlayerAttributeComp = Player->GetComponentByClass<UJAttributeComponent>();
 	float PlayerDamage = PlayerAttributeComp->GetDamage();

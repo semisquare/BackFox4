@@ -126,7 +126,7 @@ void AJCharacter::Tick(float DeltaTime)
 		DirectionTo.Normalize();
 		FMatrix rotationMatrix = FRotationMatrix::MakeFromXZ(DirectionTo, GetOwner()->GetActorUpVector());
 		if (!bIsDodge) SetActorRotation(FRotator(GetActorRotation().Pitch, rotationMatrix.Rotator().Yaw, GetActorRotation().Roll));
-		GetController()->SetControlRotation(FRotator(FMath::Clamp(rotationMatrix.Rotator().Pitch, -50, 10), rotationMatrix.Rotator().Yaw, GetControlRotation().Roll));
+		GetController()->SetControlRotation(FRotator(FMath::Clamp(rotationMatrix.Rotator().Pitch, -60, 0), rotationMatrix.Rotator().Yaw, GetControlRotation().Roll));
 
 		//float Angle = FVector2D::CrossProduct(FVector2D(SpringArmComponent->GetForwardVector()), FVector2D(LockEnemy->GetActorLocation() - GetActorLocation()));
 		//AddControllerYawInput(Angle);
@@ -403,7 +403,7 @@ void AJCharacter::Attack(const FInputActionValue& Value)
 	{
 		bIsPressedAttack = true;
 
-		GetCharacterMovement()->Velocity = GetActorForwardVector() * 0.0f;
+		//GetCharacterMovement()->Velocity = GetActorForwardVector() * 0.0f;
 	}
 
 	GetWorldTimerManager().SetTimer(AttackBiasTimer, this, &AJCharacter::AttackTimeElapsed, 0.4f);
@@ -423,7 +423,7 @@ void AJCharacter::AttackLong(const FInputActionValue& Value)
 	{
 		bIsPressedAttackLong = true;
 
-		GetCharacterMovement()->Velocity = GetActorForwardVector() * 0.0f;
+		//GetCharacterMovement()->Velocity = GetActorForwardVector() * 0.0f;
 	}
 
 	GetWorldTimerManager().SetTimer(AttackBiasTimer, this, &AJCharacter::AttackTimeElapsed, 0.4f);
