@@ -11,6 +11,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "BrainComponent.h"
 #include "NiagaraFunctionLibrary.h"
+#include "JAnimInstance.h"
+#include "GameFramework/CharacterMovementComponent.h"
 
 // Sets default values
 AJAICharacter::AJAICharacter()
@@ -26,10 +28,13 @@ AJAICharacter::AJAICharacter()
 	CharacterUI->SetupAttachment(RootComponent);
 	
 	bIsAttacked = false;
-
 	bIsAlive = true;
+	FinishAllAttack();
+	
 
 	JPlayer = nullptr;
+
+	
 }
 
 // Called when the game starts or when spawned
@@ -38,6 +43,8 @@ void AJAICharacter::BeginPlay()
 	Super::BeginPlay();
 	
 	PawnSensingComponent->OnSeePawn.AddDynamic(this, &AJAICharacter::OnSeePawn);
+
+	AnimClass = Cast<UJAnimInstance>(GetMesh()->AnimScriptInstance);
 }
 
 void AJAICharacter::OnSeePawn(APawn* Pawn)
@@ -73,8 +80,9 @@ void AJAICharacter::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	if (JPlayer)
+	if (JPlayer && !AnimClass->bIsInAttack)
 	{
+		//GEngine->AddOnScreenDebugMessage(0, 1.1f, FColor::Red, AnimClass->bIsInAttack ? TEXT("True") : TEXT("False"));
 		FVector DirectionTo = JPlayer->GetActorLocation() - GetActorLocation();
 		DirectionTo.Normalize();
 		FMatrix rotationMatrix = FRotationMatrix::MakeFromXZ(DirectionTo, GetOwner()->GetActorUpVector());
@@ -160,6 +168,25 @@ void AJAICharacter::AttackedEnd(FName HittedBone, FVector InitialLocation, AJCha
 		
 		
 	}
+}
+
+void AJAICharacter::AttackMove()
+{
+	GetCharacterMovement()->Velocity = GetActorForwardVector() * 620.0f;
+}
+
+void AJAICharacter::FinishAllAttack()
+{
+	bIsAttack1 = false;
+	bIsAttack2 = false;
+	bIsAttack3 = false;
+	bIsAttack4 = false;
+	bIsAttack5 = false;
+}
+
+void AJAICharacter::SetAttack1(bool bIs)
+{
+	bIsAttack1 = bIs;
 }
 
 

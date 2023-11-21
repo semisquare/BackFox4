@@ -39,6 +39,18 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
 		bool bIsAlive;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+		bool bIsAttack1;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+		bool bIsAttack2;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+		bool bIsAttack3;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+		bool bIsAttack4;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+		bool bIsAttack5;
+
+
 	UBlackboardComponent* BBComp;
 
 
@@ -46,6 +58,10 @@ protected:
 		UNiagaraSystem* DeathEffect;
 
 	class AJCharacter* JPlayer;
+
+	class UJAnimInstance* AnimClass;
+
+	
 
 public:
 	// Sets default values for this character's properties
@@ -73,4 +89,13 @@ public:
 
 	void Attacked(class AJCharacter* Player, FName HittedBone, FVector HitPoint, FVector HitImpulse);
 	void AttackedEnd(FName HittedBone, FVector InitialLocation, AJCharacter* Player);
+
+	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
+		void AttackMove();
+
+	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
+		void FinishAllAttack();
+
+	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
+		void SetAttack1(bool bIs);
 };
