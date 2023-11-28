@@ -67,8 +67,8 @@ AJCharacter::AJCharacter()
 
 	LockEnemy = nullptr;
 	
-	WalkSpeed = 370.0f;
-	RunSpeed = 600.0f;
+	WalkSpeed = 220.0f;
+	RunSpeed = 400.0f;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
 }
 	
@@ -265,7 +265,7 @@ void AJCharacter::Dodge(const FInputActionValue& Value)
 			if (GetVelocity().Length() > 0) { Direction = GetVelocity(); }
 			else { Direction = GetActorForwardVector(); }
 			Direction.Normalize();
-			GetCharacterMovement()->Velocity = Direction * 1980.0f;
+			GetCharacterMovement()->Velocity = Direction * 1280.0f;
 			AttributeComponent->ApplyStaminaChange(-50.0f);
 
 			if (PlayerController)

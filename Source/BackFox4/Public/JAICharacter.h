@@ -97,5 +97,5 @@ public:
 		void FinishAllAttack();
 
 	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
-		void SetAttack1(bool bIs);
+		float SetAttack(int32 AttackIndex);
 };

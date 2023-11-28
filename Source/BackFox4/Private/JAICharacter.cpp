@@ -184,9 +184,34 @@ void AJAICharacter::FinishAllAttack()
 	bIsAttack5 = false;
 }
 
-void AJAICharacter::SetAttack1(bool bIs)
+float AJAICharacter::SetAttack(int32 AttackIndex)
 {
-	bIsAttack1 = bIs;
+	float AttackTime = 0.f;
+
+	switch (AttackIndex) {
+		case 1:
+			bIsAttack1 = true;
+			AttackTime = 4.f;
+			break;
+		case 2:
+			bIsAttack2 = true;
+			AttackTime = 5.f;
+			break;
+		case 3:
+			bIsAttack3 = true;
+			AttackTime = 1.f;
+			break;
+		case 4:
+			bIsAttack4 = true;
+			AttackTime = 1.f;
+			break;
+		case 5:
+			bIsAttack5 = true;
+			AttackTime = 2.f;
+			break;
+	}
+
+	return AttackTime;
 }
 
 
