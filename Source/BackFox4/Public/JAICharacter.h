@@ -88,7 +88,9 @@ public:
 		FOnAttacked OnAttacked;
 
 	void Attacked(class AJCharacter* Player, FName HittedBone, FVector HitPoint, FVector HitImpulse);
-	void AttackedEnd(FName HittedBone, FVector InitialLocation, AJCharacter* Player);
+	void AttackedTimeElapsed(FName HittedBone, FVector InitialLocation, class AJCharacter* Player);
+	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
+		void AttackedEnd();
 
 	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
 		void AttackMove();

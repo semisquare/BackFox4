@@ -113,3 +113,8 @@ float UJAttributeComponent::GetDamage()
 	return Damage;
 }
 
+void UJAttributeComponent::SetDamage(float Da)
+{
+	Damage = Da;
+}
+

@@ -64,12 +64,16 @@ AJCharacter::AJCharacter()
 	bIsLock = false;
 	bIsPressedAttack = false;
 	bIsPressedAttackLong = false;
+	bIsAttacked = false;
+	bIsAlive = true;
 
 	LockEnemy = nullptr;
 	
 	WalkSpeed = 220.0f;
 	RunSpeed = 400.0f;
 	GetCharacterMovement()->MaxWalkSpeed = WalkSpeed;
+
+	bIsInvincible = false;
 }
 	
 
@@ -112,7 +116,7 @@ void AJCharacter::Tick(float DeltaTime)
 	{
 		GetCharacterMovement()->MaxWalkSpeed = FMath::FInterpTo(GetCharacterMovement()->MaxWalkSpeed, WalkSpeed, DeltaTime, 4.0f);
 
-		if (AttributeComponent->IsRecoverStamina())
+		if (AttributeComponent->IsRecoverStamina() && !AnimClass->bIsInAttack && !bIsDodge)
 		{
 			AttributeComponent->ApplyStaminaChange(38.0f * DeltaTime);
 		}
@@ -168,7 +172,7 @@ void AJCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponen
 
 void AJCharacter::Move(const FInputActionValue& Value)
 {
-	if (!AnimClass->bIsInAttack)
+	if (!AnimClass->bIsInAttack && !bIsAttacked && bIsAlive)
 	{
 		// input is a Vector2D
 		FVector2D MovementVector = Value.Get<FVector2D>();
@@ -257,22 +261,25 @@ void AJCharacter::Dodge(const FInputActionValue& Value)
 
 	if (Controller != nullptr)
 	{
-		if (!bIsDodge && !AttributeComponent->IsExhausted())
+		if (!bIsDodge && !AttributeComponent->IsExhausted() && !bIsAttacked)
 		{
 			bIsDodge = true;
+			bIsInvincible = true;
 
 			FVector Direction;
 			if (GetVelocity().Length() > 0) { Direction = GetVelocity(); }
 			else { Direction = GetActorForwardVector(); }
 			Direction.Normalize();
 			GetCharacterMovement()->Velocity = Direction * 1280.0f;
-			AttributeComponent->ApplyStaminaChange(-50.0f);
+			AttributeComponent->ApplyStaminaChange(-36.0f);
 
 			if (PlayerController)
 			{
 				PlayerController->ClientStartCameraShake(AccelerateCameraShake);
 			}
 			SpringArmComponent->TargetArmLength = FMath::FInterpTo(SpringArmComponent->TargetArmLength, RunArmLength, 0.03f, 7.0f);
+
+			GetWorldTimerManager().SetTimer(DodgeTimer, this, &AJCharacter::DodgeTimeElapsed, 0.2f);
 		}
 	}
 }
@@ -289,7 +296,7 @@ void AJCharacter::DodgeEnd()
 
 void AJCharacter::DodgeTimeElapsed()
 {
-
+	bIsInvincible = false;
 }
 
 void AJCharacter::Jump()
@@ -399,10 +406,11 @@ void AJCharacter::Attack(const FInputActionValue& Value)
 {
 	GetWorldTimerManager().PauseTimer(AttackBiasTimer);
 	
-	if (!bIsPressedAttack && !bIsDodge)
+	if (!bIsPressedAttack && !bIsDodge && !GetMovementComponent()->IsFalling() && !AttributeComponent->IsExhausted())
 	{
 		bIsPressedAttack = true;
 
+		AttributeComponent->SetDamage(3.f);
 		//GetCharacterMovement()->Velocity = GetActorForwardVector() * 0.0f;
 	}
 
@@ -419,10 +427,11 @@ void AJCharacter::AttackLong(const FInputActionValue& Value)
 {
 	GetWorldTimerManager().PauseTimer(AttackBiasTimer);
 
-	if (!bIsPressedAttackLong && !bIsDodge)
+	if (!bIsPressedAttackLong && !bIsDodge && !GetMovementComponent()->IsFalling() && !AttributeComponent->IsExhausted())
 	{
 		bIsPressedAttackLong = true;
 
+		AttributeComponent->SetDamage(7.f);
 		//GetCharacterMovement()->Velocity = GetActorForwardVector() * 0.0f;
 	}
 
@@ -485,10 +494,9 @@ void AJCharacter::SetAttackDirection()
 void AJCharacter::StartAttackShake(USkeletalMeshComponent* MeshComp, AJAICharacter* HitEnemy, FVector NiagaraLocation, FRotator NiagaraRotator)
 {
 	UGameplayStatics::PlaySound2D(this, WeaponES, 1.0f, FMath::RandRange(0.8f, 1.2f));
-
 	PlayerController->ClientStartCameraShake(AttackCameraShake);
-
 	UNiagaraFunctionLibrary::SpawnSystemAtLocation(MeshComp, WeaponEffect, NiagaraLocation, NiagaraRotator);
+
 	//if (FloatTextWidget)
 	//{
 	//	UUserWidget* FloatTextWidgetRef = CreateWidget<UUserWidget>(GetWorld(), FloatTextWidget);
@@ -502,7 +510,7 @@ void AJCharacter::StartAttackShake(USkeletalMeshComponent* MeshComp, AJAICharact
 	//	}
 	//}
 
-	GetMesh()->GlobalAnimRateScale = 0.1f;
+	GetMesh()->GlobalAnimRateScale = 0.18f;
 
 	GetWorldTimerManager().SetTimer(AttackShakeTimer, this, &AJCharacter::StopAttackShake, 0.1f);
 
@@ -514,6 +522,55 @@ void AJCharacter::StopAttackShake()
 	GetMesh()->GlobalAnimRateScale = 1.f;
 
 	PlayerController->ClientStartCameraShake(AttackCameraShake);
+}
+
+void AJCharacter::Attacked(AJAICharacter* Enemy, USkeletalMeshComponent* MeshComp, FVector NiagaraLocation, FRotator NiagaraRotator)
+{
+	if (bIsInvincible) return;
+
+	bIsAttacked = true;
+
+	UGameplayStatics::PlaySound2D(this, WeaponES, 1.0f, FMath::RandRange(0.8f, 1.2f));
+	PlayerController->ClientStartCameraShake(AttackCameraShake);
+	UNiagaraFunctionLibrary::SpawnSystemAtLocation(MeshComp, WeaponEffect, NiagaraLocation, NiagaraRotator);
+
+	FVector InitialLocation = GetMesh()->GetRelativeLocation();
+
+	FVector DirectionTo = GetActorLocation() - Enemy->GetActorLocation();
+	DirectionTo = FVector(DirectionTo.X, DirectionTo.Y, 0);
+	DirectionTo.Normalize();
+	ApplyWorldOffset(DirectionTo * 106.f, true);
+
+	UJAttributeComponent* EnemyAttributeComp = Enemy->GetComponentByClass<UJAttributeComponent>();
+	float EnemyDamage = EnemyAttributeComp->GetDamage();
+	float ActualDamage = int(FMath::Max(FMath::RandRange(EnemyDamage - 2, EnemyDamage + 2), 1));
+	AttributeComponent->ApplyHealthChange(-ActualDamage);
+
+	OnAttacked.Broadcast(Enemy, ActualDamage);
+
+	//GEngine->AddOnScreenDebugMessage(0, 1.1f, FColor::Red, FString::Printf(TEXT("My Float Value: %f"), EnemyDamage));
+
+	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &AJCharacter::AttackedTimeElapsed, InitialLocation, Enemy);
+	GetWorldTimerManager().SetTimer(AttackedTimer, TimerDelegate, 0.5f, false);
+}
+
+void AJCharacter::AttackedTimeElapsed(FVector InitialLocation, AJAICharacter* Enemy)
+{
+	bIsAttacked = false;
+
+	if (AttributeComponent->IsDead())
+	{
+		bIsAlive = false;
+
+		GetMesh()->SetCollisionProfileName("NoCollision");
+
+		OnDeath.Broadcast(nullptr, bIsAlive);
+	}
+}
+
+void AJCharacter::AttackedEnd()
+{
+	bIsAttacked = false;
 }
 
 UJAttributeComponent* AJCharacter::GetAttributeComponent()

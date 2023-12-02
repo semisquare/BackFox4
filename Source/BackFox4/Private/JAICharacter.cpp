@@ -114,22 +114,23 @@ void AJAICharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompon
 
 void AJAICharacter::Attacked(AJCharacter* Player, FName HittedBone, FVector HitPoint, FVector HitImpulse)
 {
-	if (HittedBone == "None" || HittedBone == "pelvis" || HittedBone == "Root" || HittedBone == "Hips") return;
+	//if (HittedBone == "None" || HittedBone == "pelvis" || HittedBone == "Root" || HittedBone == "Hips") return;
 
 	if(!JPlayer){ JPlayer = Player; }
 
 	bIsAttacked = true;
+	BBComp->SetValueAsBool("IsAttacked", bIsAttacked);
 
 	FVector InitialLocation = GetMesh()->GetRelativeLocation();
 
-	FVector DirectionTo = GetMesh()->GetBoneLocation(HittedBone) - Player->GetActorLocation();
+	FVector DirectionTo = GetActorLocation() - Player->GetActorLocation();
 	DirectionTo = FVector(DirectionTo.X, DirectionTo.Y, 0);
 	DirectionTo.Normalize();
-	ApplyWorldOffset(DirectionTo * 106.f, true);
+	ApplyWorldOffset(DirectionTo * 76.f, true);
 
 	UJAttributeComponent* PlayerAttributeComp = Player->GetComponentByClass<UJAttributeComponent>();
 	float PlayerDamage = PlayerAttributeComp->GetDamage();
-	float ActualDamage = int(FMath::Max(FMath::RandRange(PlayerDamage - 3, PlayerDamage + 3), 1));
+	float ActualDamage = int(FMath::Max(FMath::RandRange(PlayerDamage - 2, PlayerDamage + 2), 1));
 	AttributeComponent->ApplyHealthChange(-ActualDamage);
 
 	//GetMesh()->SetAllBodiesBelowSimulatePhysics(HittedBone, true);
@@ -138,13 +139,14 @@ void AJAICharacter::Attacked(AJCharacter* Player, FName HittedBone, FVector HitP
 
 	OnAttacked.Broadcast(nullptr, ActualDamage);
 
-	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &AJAICharacter::AttackedEnd, HittedBone, InitialLocation, Player);
-	GetWorldTimerManager().SetTimer(AttackedTimer, TimerDelegate, 0.1f, false);
+	FTimerDelegate TimerDelegate = FTimerDelegate::CreateUObject(this, &AJAICharacter::AttackedTimeElapsed, HittedBone, InitialLocation, Player);
+	GetWorldTimerManager().SetTimer(AttackedTimer, TimerDelegate, 0.3f, false);
 }
 
-void AJAICharacter::AttackedEnd(FName HittedBone, FVector InitialLocation, AJCharacter* Player)
+void AJAICharacter::AttackedTimeElapsed(FName HittedBone, FVector InitialLocation, AJCharacter* Player)
 {
 	bIsAttacked = false;
+	BBComp->SetValueAsBool("IsAttacked", bIsAttacked);
 
 	//GetMesh()->SetAllBodiesSimulatePhysics(false);
 	//GetMesh()->SetAllBodiesBelowPhysicsBlendWeight(HittedBone, 0);
@@ -170,6 +172,12 @@ void AJAICharacter::AttackedEnd(FName HittedBone, FVector InitialLocation, AJCha
 	}
 }
 
+void AJAICharacter::AttackedEnd()
+{
+	bIsAttacked = false;
+	BBComp->SetValueAsBool("IsAttacked", bIsAttacked);
+}
+
 void AJAICharacter::AttackMove()
 {
 	GetCharacterMovement()->Velocity = GetActorForwardVector() * 620.0f;
@@ -187,30 +195,37 @@ void AJAICharacter::FinishAllAttack()
 float AJAICharacter::SetAttack(int32 AttackIndex)
 {
 	float AttackTime = 0.f;
+	float Dama = 0.f;
 
 	switch (AttackIndex) {
 		case 1:
 			bIsAttack1 = true;
 			AttackTime = 4.f;
+			Dama = 5.f;
 			break;
 		case 2:
 			bIsAttack2 = true;
 			AttackTime = 5.f;
+			Dama = 7.f;
 			break;
 		case 3:
 			bIsAttack3 = true;
 			AttackTime = 1.f;
+			Dama = 3.f;
 			break;
 		case 4:
 			bIsAttack4 = true;
 			AttackTime = 1.f;
+			Dama = 3.f;
 			break;
 		case 5:
 			bIsAttack5 = true;
 			AttackTime = 2.f;
+			Dama = 4.f;
 			break;
 	}
 
+	AttributeComponent->SetDamage(Dama);
 	return AttackTime;
 }
 

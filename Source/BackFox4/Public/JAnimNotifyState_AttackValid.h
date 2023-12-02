@@ -6,20 +6,39 @@
 #include "Animation/AnimNotifies/AnimNotifyState.h"
 #include "JAnimNotifyState_AttackValid.generated.h"
 
-/**
- * 
- */
+class AJCharacter;
+class AJAICharacter;
+
+UENUM(BlueprintType)
+enum class EAttackInstigator : uint8
+{
+	EI_Player       UMETA(DisplayName = "Player"),
+	EI_Enemy        UMETA(DisplayName = "Enemy"),
+};
+
 UCLASS()
 class BACKFOX4_API UJAnimNotifyState_AttackValid : public UAnimNotifyState
 {
 	GENERATED_BODY()
 
 public:
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attack, meta = (AllowPrivateAccess = "true"))
+		EAttackInstigator AttackInstigator = EAttackInstigator::EI_Player;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attack, meta = (AllowPrivateAccess = "true"))
+		bool bIsLeftS = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = Attack, meta = (AllowPrivateAccess = "true"))
+		bool bIsRightS = false;
+
 	TArray<FHitResult> HitResults;
 
-	TArray<AActor*> HitEnemies;
+	TArray<AJCharacter*> HitPlayers;
+	TArray<AJAICharacter*> HitEnemies;
 
-	class AJCharacter* Player;
+	AJCharacter* AttackPlayer;
+	AJAICharacter* AttackEnemy;
 
 	class USkeletalMeshComponent* Weapon;
 
@@ -32,3 +51,5 @@ public:
 	virtual void NotifyEnd(USkeletalMeshComponent* MeshComp, UAnimSequenceBase* Animation)override;
 	
 };
+
+

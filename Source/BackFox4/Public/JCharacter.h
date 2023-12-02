@@ -9,6 +9,8 @@
 
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnLock, AActor*, InstigatorActor, bool, bIsInSight);
 DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FOnStartAttack, AActor*, InstigatorActor);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnAttackedP, AActor*, InstigatorActor, float, Damage);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_TwoParams(FOnDeath, AActor*, InstigatorActor, bool, bIsA);
 
 class USpringArmComponent;
 class UCameraComponent;
@@ -79,6 +81,10 @@ protected:
 		bool bIsPressedAttackLong;
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		bool bIsInAttack;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+		bool bIsAttacked;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Animation, meta = (AllowPrivateAccess = "true"))
+		bool bIsAlive;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = Input, meta = (AllowPrivateAccess = "true"))
 		float WalkSpeed;
@@ -109,6 +115,7 @@ protected:
 	FTimerHandle AttackLongTimer;
 	FTimerHandle AttackBiasTimer;
 	FTimerHandle AttackShakeTimer;
+	FTimerHandle AttackedTimer;
 
 	TArray<FHitResult> FocusHitResults;
 	TArray<AActor*> ActorsToIgnoreFocus;
@@ -120,6 +127,8 @@ protected:
 
 
 	AActor* LockEnemy;
+
+	bool bIsInvincible;
 
 public:
 	// Sets default values for this character's properties
@@ -179,6 +188,17 @@ public:
 
 	void StartAttackShake(USkeletalMeshComponent* MeshComp, class AJAICharacter* HitEnemy, FVector NiagaraLocation, FRotator NiagaraRotator);
 	void StopAttackShake();
+
+	void Attacked(class AJAICharacter* Enemy, USkeletalMeshComponent* MeshComp, FVector NiagaraLocation, FRotator NiagaraRotator);
+	void AttackedTimeElapsed(FVector InitialLocation, class AJAICharacter* Enemy);
+	UFUNCTION(BlueprintCallable, Category = Input, meta = (AllowPrivateAccess = "true"))
+		void AttackedEnd();
+
+	UPROPERTY(BlueprintAssignable)
+		FOnAttackedP OnAttacked;
+
+	UPROPERTY(BlueprintAssignable)
+		FOnDeath OnDeath;
 
 	UJAttributeComponent* GetAttributeComponent();
 };

@@ -76,4 +76,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 		float GetDamage();
+
+	UFUNCTION(BlueprintCallable)
+		void SetDamage(float Da);
 };
